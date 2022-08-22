@@ -1,0 +1,106 @@
+分析器的组成
+    ① 字符过滤器(character filter): 比如去除HTML标签、把&替换为and等.
+    ② 分词器(tokenizer): 按照某种规律, 如根据空格、逗号等, 将文本块进行分解.
+    ③ 标记过滤器(token filter): 所有被分词器分解的词都将经过token filters的处理,
+        它可以修改词(如小写化处理)、去掉词(根据某一规则去掉无意义的词, 如"a", "the", "的"等), 增加词(如同义词"jump"、"leap"等).
+
+ES中的默认分词器: standard tokenizer, 是标准分词器, 它以单词为边界进行分词. 具有如下功能:
+
+    ① standard token filter: 去掉无意义的标签, 如<>, &, - 等.
+    ② lowercase token filter: 将所有字母转换为小写字母.
+    ③ stop token filer(默认被禁用): 移除停用词, 比如"a"、"the"等.
+
+
+S 有下面这些内置的分词器：
+
+Standard Analyzer：默认分词器，按词切分，转小写处理，也可以过滤停用词（默认关闭）。
+在 ES 中的名称为 standard
+Simple Analyzer：按照非字母切分，非字母会被去除，转小写处理。
+在 ES 中的名称为 simple
+Stop Analyzer：按照非字母切分，非字母会被去除，转小写处理，停用词过滤(the、a、is 等)。
+在 ES 中的名称为 stop
+Whitespace Analyzer：按照空格切分，不转小写。
+在 ES 中的名称为 whitespace
+Keyword Analyzer：不做任何的分词处理，直接将输入当作输出。
+在 ES 中的名称为 keyword
+Pattern Analyzer：通过正则表达式进行分词，默认为\W+非字符分隔，然后会进行转小写处理。
+在 ES 中的名称为 pattern
+Language Analyzers：提供了30多种常见语言的分词器，比如：
+english：英语分词器，会对英文单词进行归一化处理，去掉停用词等。
+归一化处理：比如 running 变为 run，goods 变为 good 等。
+更多可参考这里。
+
+
+//自定义邮件格式拆分analyzer
+PUT custom_rebuild_pattern_email_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "email_analyzer":{
+          "type":"pattern",
+          "pattern":"\\W|_",
+          "lowercase":true
+        }
+      }
+    }
+  }
+}
+//请求参数
+POST custom_rebuild_pattern_email_index/_analyze
+{
+  "analyzer": "email_analyzer",
+  "text": "Ruyin_Zh@foo-bar.com"
+}
+//分词结果
+{
+  "tokens" : [
+    {
+      "token" : "ruyin",
+      "start_offset" : 0,
+      "end_offset" : 5,
+      "type" : "word",
+      "position" : 0
+    },
+    {
+      "token" : "zh",
+      "start_offset" : 6,
+      "end_offset" : 8,
+      "type" : "word",
+      "position" : 1
+    },
+    {
+      "token" : "foo",
+      "start_offset" : 9,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 2
+    },
+    {
+      "token" : "bar",
+      "start_offset" : 13,
+      "end_offset" : 16,
+      "type" : "word",
+      "position" : 3
+    },
+    {
+      "token" : "com",
+      "start_offset" : 17,
+      "end_offset" : 20,
+      "type" : "word",
+      "position" : 4
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+

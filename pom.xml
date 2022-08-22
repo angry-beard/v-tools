@@ -13,6 +13,7 @@
         <module>v-elasticsearch</module>
         <module>v-minio</module>
         <module>v-core-encrypt</module>
+        <module>v-core-zk</module>
     </modules>
 
     <properties>
