@@ -14,11 +14,13 @@
         <module>v-minio</module>
         <module>v-core-encrypt</module>
         <module>v-core-zk</module>
+        <module>v-vert.x</module>
     </modules>
 
     <properties>
         <v.tool.version>0.0.1</v.tool.version>
         <v.project.version>0.0.1</v.project.version>
+        <vert.version>4.3.3</vert.version>
         <java.version>11</java.version>
         <maven.plugin.version>2.3.1.RELEASE</maven.plugin.version>
         <knife4j.version>2.0.9</knife4j.version>
