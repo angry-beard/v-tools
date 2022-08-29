@@ -183,18 +183,123 @@ transitions of a ZooKeeper client:
             set -v 1 /epoch/angry_beard/income 500
             stat /epoch/angry_beard/income
           ```
-        - cversion: ()The number of changes to the children of this z_node.
-        - aversion: ()The number of changes to the ACL of this z_node.
+        - cversion: (子节点版本号)The number of changes to the children of this z_node.
+          ```shell 
+            create /epoch/angry_beard/home
+            stat /epoch/angry_beard
+            create /epoch/angry_beard/work
+            stat /epoch/angry_beard
+          ```
+        - aversion: (ACL的版本号)The number of changes to the ACL of this z_node.
+    - zxid
+        - [官网](https://zookeeper.apache.org/doc/current/zookeeperProgrammers.html#sc_timeInZk)
+          ![zxid](./docs/img/zxid.png)
+          zxid是事物编号，8字节的整型数，即64个比特位，前32标识，后32位用来计算数。<br/>
+          zxid的初始值为0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 <br/>
+          每一次事务请求都会把后面的32位+1,比如进行了10次请求:00000000 00000000 00000000 00000000 00000000 00000000 00000000 00001010 <br/>
+          每进行一次leader选举前32位+1，后32位清零：00000000 00000000 00000000 00000001 00000000 00000000 00000000 00000000 <br/>
+          若一直没有进行leader选举，同时一直发生事务操作，极限值为: 00000000 00000000 00000000 00000000 11111111 11111111 11111111 11111111 <br/>
+          此时再发生事务操作则前32位+1 变成：00000000 00000000 00000000 00000001 00000000 00000000 00000000 00000000 <br/>
+            - czxid:当前节点被创建时的事务id
+            - mzxid:当前节点最后一次被修改时的事务id
+            - pzxid:当前节点的子节点最后一次被修改时的事务id，只有子节点变化才会改便pzid,子节点值变化不会改变pzid
+          ```shell 
+            create /zk-zxid
+            stat /zk-zxid
+            stat /zk-zxid
+            create /zk-zxid/child01
+            stat /zk-zxid
+            stat /zk-zxid/child01
+            set zk-zxid/child01 666
+            stat zk-zxid
+            create /zk-zxid/child02
+            stat zk-zxid
+          ```
 
 ## 节点特性
 
 ### 持久节点 （persistent）
 
+- 特性: 不会因客户端宕机而删除节点
+
+```shell
+create # 查看create命令 : create [-s] [-e] [-c] [-t ttl] path [data] [acl]
+create /angry_beard happy
+stat /angry_beard # ephemeralOwner = 0x0
+quit 
+./zkCli.sh
+ls /
+```
+
 ### 临时节点 （ephemeral）
 
-### 有序节点 （）
+- 特性: 会因客户端宕机而删除节点
 
-### 容器节点 （）
+```shell
+create -e /temp_node_test 666
+stat /temp_node_test # ephemeralOwner = 0x1000a9afb310000 sessionId
+quit 
+./zkCli.sh
+ls /
+```
 
-### TTL节点 （）
+### 有序节点 （sequential）
 
+- 特性: 会给节点名称添加一个自增的序号
+    - 持久有序节点
+      ```shell 
+      create -s /order
+      create -s /order
+      create -s /order
+      ls /
+      ```
+    - 临时有序节点
+      ```shell 
+      create -s -e /prodect
+      create -s -e /prodect
+      create -s -e /prodect
+      ls -R /
+      quit 
+      ./zkCli.sh
+      ls -R /
+      ```
+
+### 容器节点
+
+- [Add in 3.6.0](https://zookeeper.apache.org/doc/current/zookeeperProgrammers.html#Container+Nodes)
+  ```text 
+  ZooKeeper has the notion of container znodes. Container znodes are special purpose znodes useful for recipes such as leader, 
+  lock, etc. When the last child of a container is deleted, the container becomes a candidate to be deleted by the server at 
+  some point in the future.
+  Given this property, you should be prepared to get KeeperException.NoNodeException when creating children inside of container 
+  znodes. i.e. when creating child znodes inside of container znodes always check for KeeperException.NoNodeException and 
+  recreate the container znode when it occurs.
+  ```
+
+  ```shell 
+  create -c /my-container
+  create /my-container/project1
+  create /my-container/project2
+  ls -R /my-container
+  delete /my-container/project1
+  delete /my-container/project2
+  # 等待一段时间后，查看节点是否还存在
+  ```
+
+### TTL节点
+
+- [Add in 3.6.0](https://zookeeper.apache.org/doc/current/zookeeperProgrammers.html#TTL+Nodes)
+  ```text 
+  When creating PERSISTENT or PERSISTENT_SEQUENTIAL znodes, you can optionally set a TTL in milliseconds for the znode. 
+  If the znode is not modified within the TTL and has no children it will become a candidate to be deleted by the server at 
+  some point in the future.
+
+  Note: TTL Nodes must be enabled via System property as they are disabled by default. See the Administrator's Guide for details.
+  If you attempt to create TTL Nodes without the proper System property set the server will throw 
+  KeeperException.UnimplementedException.
+  ```
+  开启: zoo.cfg 加一条( zookeeper.extendedTypesEnabled=true ) ;重启zkServer
+  ```shell 
+  create -t 10 /zk-ttl 666
+  ls /
+  ```

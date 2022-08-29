@@ -1,3 +1,8 @@
 # v-tools
 
-[咕泡](https://ke.gupaoedu.cn/home) 笔记
+## navigation
+
+- [zk](./v-core-zk/zk.md)
+- [vert.x](./v-vert.x/vert.md)
+
+*[reference](https://ke.gupaoedu.cn/home)*
